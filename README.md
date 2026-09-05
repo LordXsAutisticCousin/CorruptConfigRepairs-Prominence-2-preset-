@@ -12,7 +12,7 @@ When launching Minecraft (`preLaunch`):
 3. **Restores Clean Configs:**
    - If an uncorrupted config exists in `config/corruptconfigannihilator/defaults/`, it is copied to the live path to restore intended modpack settings.
    - If no default exists, the path stays empty so the mod can regenerate a fresh default file.
-4. **Logs Actions:** Records all restorations and quarantines in `logs/corruptconfigannihilator.log`.
+4. **Logs Actions:** Records restorations and quarantines in `logs/corruptconfigannihilator.log` (appended each launch with a timestamp header) and in the game log (`logs/latest.log`).
 
 ---
 
@@ -81,5 +81,5 @@ rsync -av --exclude='corruptconfigannihilator' config/ config/corruptconfigannih
 - **Files only NUL-checked:** `.cfg` and `.snbt` (FTB mods use their own SNBT dialect), Balm's `balm-client.toml`/`balm-common.toml` (non-spec TOML read by Balm's own parser), and Sortilege's `*.sol.json` (a custom format, not JSON). Validated against every config in Prominence II: zero false positives.
 - **Skipped folders:** `config/corruptconfigannihilator/`, `jei/`, `rei/`, `emi/`, and `spark/` are skipped automatically.
 - **Backup retention:** Only the newest 20 backup snapshots are kept; older ones are deleted automatically.
-- **Log file:** `logs/corruptconfigannihilator.log` is rewritten on every launch and reflects the most recent scan only.
+- **Log file:** `logs/corruptconfigannihilator.log` is appended on every launch, with a timestamp header per run.
 - **No jar rebuilding:** Clean configs live directly on disk in the modpack files.

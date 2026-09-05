@@ -6,18 +6,24 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 final class Repair {
     private static final Logger LOGGER = LoggerFactory.getLogger(Annihilator.MOD_ID);
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final DateTimeFormatter LOG_HEADER_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    static final Pattern SNAPSHOT_PATTERN = Pattern.compile("^\\d{8}_\\d{6}$");
     static final String BACKUPS_DIR = Annihilator.MOD_ID + "_backups";
     static final int MAX_BACKUPS = 20;
 
@@ -31,6 +37,7 @@ final class Repair {
         Path snapshot = backupsDir.resolve(STAMP.format(LocalDateTime.now()));
         List<String> log = new ArrayList<>();
         int scanned = 0;
+        boolean snapshotWritten = false;
 
         try {
             List<Path> files = ConfigWalk.list(config);
@@ -43,6 +50,7 @@ final class Repair {
                 String name = rel.toString().replace('\\', '/');
                 LOGGER.warn("Corrupt config detected: {}", name);
                 if (backup(file, snapshot.resolve(rel), name, log)) {
+                    snapshotWritten = true;
                     restore(templates.resolve(rel), file, name, log);
                 }
             }
@@ -56,7 +64,9 @@ final class Repair {
             log.add("scan-ok scanned=" + scanned);
         } else {
             LOGGER.info("Config scan complete. {} actions taken across {} configs.", log.size(), scanned);
-            pruneOldBackups(backupsDir);
+            if (snapshotWritten) {
+                pruneOldBackups(backupsDir);
+            }
         }
 
         writeLog(gameDir.resolve("logs").resolve(Annihilator.MOD_ID + ".log"), log);
@@ -97,23 +107,57 @@ final class Repair {
     }
 
     static void pruneOldBackups(Path backupsDir) {
-        if (!Files.isDirectory(backupsDir)) {
+        if (!Files.isDirectory(backupsDir, LinkOption.NOFOLLOW_LINKS)) {
             return;
         }
         try (Stream<Path> stream = Files.list(backupsDir)) {
             List<Path> dirs = stream
-                .filter(Files::isDirectory)
-                .sorted(Comparator.comparing(Path::getFileName))
+                .filter(path -> Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
+                .filter(Repair::isSnapshotDir)
+                .sorted(Comparator
+                    .comparingLong(Repair::lastModifiedMillis)
+                    .thenComparing(path -> path.getFileName().toString()))
                 .toList();
-            if (dirs.size() > MAX_BACKUPS) {
-                int toDelete = dirs.size() - MAX_BACKUPS;
-                for (int i = 0; i < toDelete; i++) {
-                    deleteRecursively(dirs.get(i));
+            if (dirs.size() <= MAX_BACKUPS) {
+                return;
+            }
+            int toDelete = dirs.size() - MAX_BACKUPS;
+            int pruned = 0;
+            for (int i = 0; i < toDelete; i++) {
+                Path old = dirs.get(i);
+                try {
+                    deleteRecursively(old);
+                    pruned++;
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to delete old backup {}: {}", old.getFileName(), e.getMessage(), e);
                 }
-                LOGGER.info("Pruned {} old backup snapshot(s), keeping newest {}", toDelete, MAX_BACKUPS);
+            }
+            if (pruned > 0) {
+                LOGGER.info("Pruned {} old backup snapshot(s), keeping newest {}", pruned, MAX_BACKUPS);
             }
         } catch (Exception e) {
             LOGGER.warn("Failed to prune old backups: {}", e.getMessage(), e);
+        }
+    }
+
+    static boolean isSnapshotDir(Path dir) {
+        String name = dir.getFileName().toString();
+        if (!SNAPSHOT_PATTERN.matcher(name).matches()) {
+            return false;
+        }
+        try {
+            STAMP.parse(name);
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
+
+    private static long lastModifiedMillis(Path path) {
+        try {
+            return Files.getLastModifiedTime(path, LinkOption.NOFOLLOW_LINKS).toMillis();
+        } catch (IOException e) {
+            return Long.MAX_VALUE;
         }
     }
 
@@ -128,7 +172,11 @@ final class Repair {
     private static void writeLog(Path file, List<String> log) {
         try {
             Files.createDirectories(file.getParent());
-            Files.write(file, log, StandardCharsets.UTF_8);
+            List<String> lines = new ArrayList<>(log.size() + 2);
+            lines.add("===== " + LOG_HEADER_TIME.format(LocalDateTime.now()) + " =====");
+            lines.addAll(log);
+            lines.add("");
+            Files.write(file, lines, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (Exception e) {
             LOGGER.error("Failed to write {}: {}", file, e.getMessage(), e);
         }
