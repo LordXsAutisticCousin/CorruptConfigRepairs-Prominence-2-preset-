@@ -1,0 +1,15 @@
+# CorruptConfigAnnihilator - Exclusion Rules
+# Add gitignore-style glob patterns below (one per line, case-insensitive, '#' for comments).
+# Existing files on disk matching an active rule will be excluded from syntax verification, updates, and overrides.
+# Missing files matching an ignore rule will still be seeded on initial install if a template exists.
+
+# Examples:
+# Exclude entire mod configuration folder:
+# config/somemod/
+
+# Exclude specific file:
+# config/other-mod/custom.json
+
+# Exclude files matching pattern across directories:
+# config/**/cache.json
+# *.sol.json
