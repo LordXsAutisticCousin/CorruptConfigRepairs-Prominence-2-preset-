@@ -114,7 +114,7 @@ When built from source, Gradle packages the repository's `config/` directory int
 ##### 1. Repository Setup
 - Clone the repository:
   ```bash
-  git clone https://github.com/<owner>/CorruptConfigAnnihilator.git
+  git clone https://github.com/LordXsAutisticCousin/CorruptConfigRepairs.git
   ```
 - Or extract the downloaded source archive.
 
