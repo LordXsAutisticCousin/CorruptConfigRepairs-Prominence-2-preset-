@@ -1,6 +1,6 @@
 # CorruptConfigAnnihilator
 
-A Fabric 1.20.1 `preLaunch` utility that provisions default configurations, applies modpack configuration updates, and repairs corrupted or invalid configuration files prior to game initialization.
+A universal Fabric `preLaunch` utility that provisions default configurations, applies modpack configuration updates, and repairs corrupted or invalid configuration files prior to game initialization across all Minecraft versions.
 
 ---
 
