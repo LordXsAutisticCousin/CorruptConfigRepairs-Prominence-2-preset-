@@ -3,7 +3,7 @@
   "id": "corruptconfigannihilator",
   "version": "${version}",
   "name": "CorruptConfigAnnihilator",
-  "description": "Quarantines unreadable config files on Play and restores pack-owned templates.",
+  "description": "Default configuration provisioning that heals corrupt configs, rolls out pack updates to untouched files, and enforces overrides. Everything it replaces is backed up.",
   "license": "MIT",
   "environment": "*",
   "entrypoints": {

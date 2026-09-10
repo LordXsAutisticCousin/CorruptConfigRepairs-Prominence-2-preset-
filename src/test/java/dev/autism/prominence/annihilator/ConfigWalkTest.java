@@ -17,10 +17,31 @@ class ConfigWalkTest {
         Path config = dir.resolve("config");
         write(config, "live.json", "{}");
         write(config.resolve("jei"), "ignored.json", "{}");
+        write(config.resolve("spark"), "ignored.json", "{}");
         write(config.resolve(Annihilator.MOD_ID).resolve("defaults"), "live.json", "{}");
         write(config, "notes.txt", "text");
 
         assertEquals(List.of(config.resolve("live.json")), ConfigWalk.list(config));
+    }
+
+    @Test
+    void templateWalkSkipsJunkButKeepsEverythingElse(@TempDir Path dir) throws Exception {
+        Path templates = dir.resolve("defaults");
+        Path options = write(templates, "options.txt", "fov:70.0\n");
+        Path nested = write(templates.resolve("config").resolve("mod"), "conf.json", "{}");
+        Path readme = write(templates.resolve("config").resolve("mod"), "readme.md", "docs");
+        write(templates, ".gitkeep", "");
+        write(templates, ".gitignore", "");
+        write(templates, ".gitattributes", "");
+        write(templates, ".hgignore", "");
+        write(templates.resolve(".git"), "HEAD", "ref");
+        write(templates, "Thumbs.db", "junk");
+        write(templates.resolve("config"), ".DS_Store", "junk");
+        write(templates, "desktop.ini", "junk");
+        write(templates, ".options.txt" + Repair.TMP_SUFFIX, "leftover");
+
+        assertEquals(List.of(nested, readme, options), ConfigWalk.walkAllFiles(templates));
+        assertTrue(ConfigWalk.walkAllFiles(dir.resolve("absent")).isEmpty());
     }
 
     @Test

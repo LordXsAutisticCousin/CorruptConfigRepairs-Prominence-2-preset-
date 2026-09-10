@@ -36,6 +36,10 @@ processResources {
     filesMatching("fabric.mod.json") {
         expand "version": project.version
     }
+    from("config") {
+        into("default_configs")
+        exclude "**/*.mca"
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

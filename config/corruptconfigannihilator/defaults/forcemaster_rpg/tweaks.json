@@ -1,7 +1,0 @@
-{
-  "ignore_items_required_mods": false,
-  "stonehand_stun_duration_seconds": 1,
-  "stonehand_stun_chance_on_attack": 0.1,
-  "knuckle_chance_knockup": 0.1,
-  "knuckle_knockup_height": 0.2
-}

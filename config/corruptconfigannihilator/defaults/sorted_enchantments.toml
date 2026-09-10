@@ -1,9 +1,0 @@
-# Whether to affect all items except Enchanted Books
-# default: true
-enable = true
-# Whether to affect Enchanted Books
-# default: false
-enableBooks = false
-# Whether to sort curses below all other enchantments
-# default: true
-sortCursesBelow = true

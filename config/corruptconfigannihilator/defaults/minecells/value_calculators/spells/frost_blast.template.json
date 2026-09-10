@@ -1,7 +1,0 @@
-{
-  "variables": {},
-  "equations": {
-    "damage": 2.0,
-    "cooldown": 6.0
-  }
-}

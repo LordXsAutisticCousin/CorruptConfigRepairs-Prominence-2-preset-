@@ -3,6 +3,7 @@ package dev.autism.prominence.annihilator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.RandomAccessFile;
 import java.nio.file.Path;
 
 import static dev.autism.prominence.annihilator.TestFiles.bytes;
@@ -34,22 +35,33 @@ class IntegrityTest {
 
     @Test
     void realWorldQuirksAreLeftAlone(@TempDir Path dir) throws Exception {
-        // FTB Quests / Crash Assistant write with the platform charset (Cp1252 'ñ' = 0xF1) and read it back the same way
         assertFalse(Integrity.isBroken(bytes(dir, "ftbqt-cache.json",
             new byte[]{'{', '"', 'E', 's', 'p', 'a', (byte) 0xF1, 'o', 'l', '"', ':', '1', '}'})));
-        // Create: Estrogen ships zero-byte TOML files; night-config reads them as an empty config
         assertFalse(Integrity.isBroken(bytes(dir, "estrogen-client.toml", new byte[0])));
         assertFalse(Integrity.isBroken(bytes(dir, "empty.properties", new byte[0])));
         assertFalse(Integrity.isBroken(write(dir, "bom_only.cfg", "\uFEFF")));
-        // FTB Library SNBT dialect: '#' comments and no commas between entries
         assertFalse(Integrity.isBroken(write(dir, "chapter_groups.snbt",
             "{\n\t# comment\n\tchapter_groups: [\n\t\t{ id: \"5EA21B61\", title: \"&6Tutorials\" }\n\t\t{ id: \"3DBADFFD\", title: \"&6Campaign\" }\n\t]\n}\n")));
-        // Balm serialises resource-location sets as bare words, which is not spec TOML, and parses them itself
         assertFalse(Integrity.isBroken(write(dir, "balm-client.toml",
             "\n# This is an example resource location set property\nexampleResourceLocationSet = [minecraft:dirt, minecraft:diamond]\n")));
-        // Sortilege's *.sol.json is its own format with stray top-level values
         assertFalse(Integrity.isBroken(write(dir, "sortilege.sol.json",
             "// This config file uses a custom defined parser.\n\nversion: 9.0\nreset: false\n\n\"enchanting\": {\n  \"default\": 6\n}\n")));
+        assertFalse(Integrity.isBroken(write(dir, "options.txt", "# options\nfov:70.0\nkey_key.jump:key.keyboard.space\n")));
+        assertFalse(Integrity.isBroken(write(dir, "optionsshaders.txt", "shaderPack=Complementary.zip\nantialiasingLevel=0\n")));
+        assertFalse(Integrity.isBroken(write(dir, "badoptimizations.txt", "free text without separators\n")));
+        assertFalse(Integrity.isBroken(write(dir, "optionsviveprofiles.txt", "{\n  \"selectedProfile\": \"Default\"\n}\n")));
+        assertFalse(Integrity.isBroken(write(dir, "notes.txt", "")));
+        assertFalse(Integrity.isBroken(bytes(dir, "servers.dat", new byte[]{0x0A, 0x00, 0x00, 0x00})));
+        assertFalse(Integrity.isBroken(bytes(dir, "pack.zip", new byte[]{0x50, 0x4B, 0x03, 0x04, 0x00})));
+        assertFalse(Integrity.isBroken(bytes(dir, "r.0.0.mca", new byte[]{0x00, 0x00, 0x00, 0x02})));
+        assertFalse(Integrity.isBroken(bytes(dir, "logo.gif", new byte[]{'G', 'I', 'F', 0x00})));
+        assertFalse(Integrity.isBroken(bytes(dir, "custom.blob", new byte[]{0x01, 0x00})));
+        assertFalse(Integrity.isBroken(bytes(dir, "CinderstoneStudios", new byte[]{0x00})));
+        assertFalse(Integrity.isBroken(bytes(dir, "unknown.xyz", new byte[0])));
+        assertFalse(Integrity.isBroken(bytes(dir, "r.-1.0.mca", new byte[0])));
+        assertFalse(Integrity.isBroken(write(dir, "jankson.json", "{\n\t// comment\n\t\"a\": 1,\n\t\"b\": [1, 2,],\n}")));
+        assertFalse(Integrity.isBroken(write(dir, "single_quotes.json", "{'a': 'b',}")));
+        assertFalse(Integrity.isBroken(write(dir, "barekeys.toml", "[blocks]\nsome/path = 2\nweird@key = 3\n")));
     }
 
     @Test
@@ -67,17 +79,43 @@ class IntegrityTest {
         assertTrue(Integrity.isBroken(write(dir, "unclosed_block.json5", "{\"a\": 1} /* unclosed")));
         assertTrue(Integrity.isBroken(write(dir, "unclosed_str.json5", "{\"a\": \"unclosed}")));
         assertTrue(Integrity.isBroken(write(dir, "bad.toml", "[general\nkey = \n")));
+        assertTrue(Integrity.isBroken(write(dir, "unclosed.toml", "[general]\nkey = \"unclosed\n")));
+        assertTrue(Integrity.isBroken(write(dir, "trailing_garbage.json", "{\"a\": 1,} more")));
         assertTrue(Integrity.isBroken(write(dir, "bad.properties", "key = \\u12xx")));
         assertTrue(Integrity.isBroken(bytes(dir, "empty.json", new byte[0])));
         assertTrue(Integrity.isBroken(write(dir, "blank.json", " \n\t\n")));
         assertTrue(Integrity.isBroken(write(dir, "blank.json5", "// only a comment\n")));
         assertTrue(Integrity.isBroken(write(dir, "bom_only.json", "\uFEFF")));
         assertTrue(Integrity.isBroken(dir.resolve("missing.json")));
+        assertTrue(Integrity.isBroken(dir));
         assertTrue(Integrity.isBroken(bytes(dir, "nulls.cfg", new byte[64])));
         assertTrue(Integrity.isBroken(bytes(dir, "half.json", new byte[]{'{', 0, '}'})));
         assertTrue(Integrity.isBroken(bytes(dir, "nulls.snbt", new byte[]{'{', 0, '}'})));
         assertTrue(Integrity.isBroken(bytes(dir, "sortilege.sol.json", new byte[]{'v', 0})));
         assertTrue(Integrity.isBroken(bytes(dir, "balm-common.toml", new byte[]{'a', 0})));
+        assertTrue(Integrity.isBroken(write(dir, "optionsof.txt", "")));
+        assertTrue(Integrity.isBroken(write(dir, "options.txt", "")));
+        assertTrue(Integrity.isBroken(write(dir, "options.txt", "invalid_no_colon_line\n")));
+        assertTrue(Integrity.isBroken(bytes(dir, "options.txt", new byte[]{'f', 0, 'o', 'v'})));
+        assertTrue(Integrity.isBroken(bytes(dir, "empty_servers.dat", new byte[0])));
+        assertTrue(Integrity.isBroken(bytes(dir, "empty.png", new byte[0])));
+        assertTrue(Integrity.isBroken(bytes(dir, "script.js", new byte[]{'v', 'a', 'r', 0})));
+        assertTrue(Integrity.isBroken(bytes(dir, "style.css", new byte[]{'a', 0, '{'})));
+    }
+
+    @Test
+    void oversizedTextFilesAreOpaqueAndNeverLoaded(@TempDir Path dir) throws Exception {
+        Path huge = dir.resolve("huge.json");
+        try (RandomAccessFile raf = new RandomAccessFile(huge.toFile(), "rw")) {
+            raf.setLength(Integrity.MAX_TEXT_SIZE + 1);
+        }
+        Path limit = dir.resolve("limit.json");
+        try (RandomAccessFile raf = new RandomAccessFile(limit.toFile(), "rw")) {
+            raf.setLength(Integrity.MAX_TEXT_SIZE);
+        }
+
+        assertFalse(Integrity.isBroken(huge));
+        assertTrue(Integrity.isBroken(limit));
     }
 
     @Test

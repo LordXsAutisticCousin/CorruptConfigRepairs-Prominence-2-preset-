@@ -1,8 +1,0 @@
-{
-  // Lethal Combo (2p): Shadow Techniques double-hit chance in %
-  "lethal_combo_twinstrike_chance_percent": 50,
-  // Evasion (4p): cooldown in seconds
-  "evasion_cooldown_seconds": 20.0,
-  // Evasion (4p): stealth duration in seconds after negating a hit
-  "evasion_stealth_duration_seconds": 2.0
-}

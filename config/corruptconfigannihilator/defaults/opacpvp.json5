@@ -1,6 +1,0 @@
-{
-  // Enable the personal pvp preference command (/opacpvp) to allow players to enable or disable pvp for themselves, an extra check on top of the party status
-  "enable_personal_preference_command": true,
-  // The default value for the personal pvp preference command (/opacpvp), true will enable pvp by default, false will disable it by default
-  "personal_preference_default": false
-}

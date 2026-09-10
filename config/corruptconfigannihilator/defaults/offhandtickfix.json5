@@ -1,9 +1,0 @@
-{
-  // If you want the mod to only fix certain items, you can use this config.
-  // Example: minecraft:stick will only fix sticks. But you can use regex, so for example
-  // if you want to fix all items from vanilla, use 'minecraft:.*' (This is not necessary as vanilla items don't have any bugs related to this)
-  "tick_regex": [
-    "simplyswords:.*",
-    "prominent:.*"
-  ]
-}

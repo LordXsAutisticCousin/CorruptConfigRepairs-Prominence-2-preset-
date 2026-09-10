@@ -1,9 +1,0 @@
-{
-  "ignore_items_required_mods": false,
-  "discordant_selfdamage_chance_per_stack": 0.02,
-  "discordant_selfdamage_multiplier_per_stack": 0.1,
-  "armies_paeon_impact_multiplier": 0.035,
-  "armys_paeon_amplifier_cap": 4,
-  "armys_paeon_cap_multiplier": 0.15,
-  "encore_cooldown_reduction": -0.15
-}
